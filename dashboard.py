@@ -353,7 +353,7 @@ for stock_idx, ticker in enumerate(tickers):
 
         # ── Tab 5: Strategies ──
         with tab5:
-            strat = st.selectbox("Choose Strategy", ["SMA Crossover", "HH/LL Breakout", "Mean Reversion (Z-Score)"])
+            strat = st.selectbox("Choose Strategy", ["SMA Crossover", "HH/LL Breakout", "Mean Reversion (Z-Score)"], key=f"strat_{ticker}")
 
             if strat == "SMA Crossover":
                 tbl = strategy_sma(df)
