@@ -261,7 +261,7 @@ def styled(fig):
 
 # ═══════════════════════════ SIDEBAR ═════════════════════════════════
 with st.sidebar:
-    st.markdown("# 📈 Trading Lab")
+    st.markdown("# 👁️ Trading Eye")
     st.markdown("---")
     tickers = st.multiselect("**Stock Tickers**", SP100, default=["AAPL"])
     period = st.selectbox("**Period**", ["3mo","6mo","1y","2y","5y"], index=2)
