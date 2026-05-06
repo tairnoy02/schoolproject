@@ -288,7 +288,7 @@ c5.metric("Z-Score", f"{z_val:.2f}")
 st.markdown("")
 
 # ───────────── Tabs ──────────────
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🕯️ Price & SMAs", "📐 MA Comparison", "📉 ADX", "🎯 Bollinger", "💰 Strategies"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🕯️ Price & SMAs", "📐 MA Comparison", "📉 ADX", "🎯 Bollinger", "💰 Strategies", "⚖️ Strategy Comparison"])
 
 # ── Tab 1: Price + SMAs ──
 with tab1:
@@ -384,3 +384,64 @@ with tab5:
 
     with st.expander("📋 Full Strategy Table"):
         st.dataframe(tbl, use_container_width=True, height=400)
+
+# ── Tab 6: Strategy Comparison ──
+with tab6:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("📊 Strategy Profit Comparison")
+    st.markdown("All three strategies' cumulative profit on the last 100 trading days.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    with st.spinner("Computing strategies…"):
+        tbl_sma = strategy_sma(df)
+        tbl_hh  = strategy_hh_ll(df)
+        tbl_mr  = strategy_mean_rev(df)
+
+    fig_cmp = go.Figure()
+
+    fig_cmp.add_scatter(
+        x=tbl_sma.index, y=tbl_sma['Profit'],
+        mode='lines', name='SMA Crossover',
+        line=dict(color='#6366f1', width=2.5)
+    )
+    fig_cmp.add_scatter(
+        x=tbl_hh.index, y=tbl_hh['Profit'],
+        mode='lines', name='HH/LL Breakout',
+        line=dict(color='#22d3ee', width=2.5)
+    )
+    fig_cmp.add_scatter(
+        x=tbl_mr.index, y=tbl_mr['Profit'],
+        mode='lines', name='Mean Reversion',
+        line=dict(color='#a855f7', width=2.5)
+    )
+
+    fig_cmp.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,.2)")
+
+    fig_cmp.update_layout(
+        title=f"{ticker} — Strategy Profit Comparison",
+        xaxis_title="Day",
+        yaxis_title="Profit ($)",
+        height=500,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+    )
+    st.plotly_chart(styled(fig_cmp), use_container_width=True)
+
+    # Summary metrics
+    s1, s2, s3 = st.columns(3)
+    p_sma = tbl_sma['Profit'].iloc[-1]
+    p_hh  = tbl_hh['Profit'].iloc[-1]
+    p_mr  = tbl_mr['Profit'].iloc[-1]
+    s1.metric("SMA Crossover", f"${p_sma:.2f}", delta_color="normal")
+    s2.metric("HH/LL Breakout", f"${p_hh:.2f}", delta_color="normal")
+    s3.metric("Mean Reversion", f"${p_mr:.2f}", delta_color="normal")
+
+    # Data table
+    with st.expander("📋 Profit Data"):
+        cmp_df = pd.DataFrame({
+            'Day': tbl_sma.index,
+            'SMA Crossover': tbl_sma['Profit'].values,
+        })
+        cmp_df = cmp_df.set_index('Day')
+        cmp_df['HH/LL Breakout'] = tbl_hh['Profit'].values[:len(cmp_df)] if len(tbl_hh) >= len(cmp_df) else pd.Series(tbl_hh['Profit'].values)
+        cmp_df['Mean Reversion'] = tbl_mr['Profit'].values[:len(cmp_df)] if len(tbl_mr) >= len(cmp_df) else pd.Series(tbl_mr['Profit'].values)
+        st.dataframe(cmp_df, use_container_width=True, height=400)
