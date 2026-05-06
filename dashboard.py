@@ -244,6 +244,32 @@ def strategy_mean_rev(df):
         hold = f
     return pd.DataFrame(rows).set_index('Day')
 
+
+def strategy_custom_sma(df_full, window):
+    df = df_full.copy()
+    col = f"SMA{window}"
+    df[col] = df['High'].rolling(window=window).mean()
+    
+    eps = 0.001
+    # 252 trading days is ~ 1 year
+    sub = df.tail(252).copy().reset_index(drop=True)
+    rows, hold, bp, cp = [], 0, 0.0, 0.0
+    for i in range(len(sub)):
+        p = sub.loc[i,'High']
+        s = float(sub.loc[i,col]) if not pd.isna(sub.loc[i,col]) else p
+        if hold == 0:
+            f = 1 if p > s + eps else 0
+        else:
+            f = 0 if p < s + eps else 1
+            
+        if hold == 0 and f == 1: bp = p; profit = 0.0
+        elif f == 1: profit = p - bp
+        elif hold == 1 and f == 0: profit = p - bp; cp = profit
+        else: profit = cp
+        rows.append({'Date': sub.loc[i,'Date'], 'Profit':round(profit,3)})
+        hold = f
+    return pd.DataFrame(rows)
+
 # ─────────────────── Chart helpers ───────────────────────────────────
 DARK = dict(
     template="plotly_dark",
@@ -279,7 +305,15 @@ stock_tabs = st.tabs(tickers)
 for stock_idx, ticker in enumerate(tickers):
     with stock_tabs[stock_idx]:
         with st.spinner(f"⏳ Crunching {ticker} data…"):
-            df = full_analysis(ticker, period)
+            df_full = full_analysis(ticker, "5y")
+            
+        if period == "3mo": display_days = 63
+        elif period == "6mo": display_days = 126
+        elif period == "1y": display_days = 252
+        elif period == "2y": display_days = 504
+        else: display_days = len(df_full)
+        
+        df = df_full.tail(display_days).reset_index(drop=True)
 
         # ───────────── KPI Row ──────────────
         latest = df.iloc[-1]
@@ -295,7 +329,7 @@ for stock_idx, ticker in enumerate(tickers):
         st.markdown("")
 
         # ───────────── Tabs ──────────────
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🕯️ Price & SMAs", "📐 MA Comparison", "📉 ADX", "🎯 Bollinger", "💰 Strategies", "⚖️ Strategy Comparison"])
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["🕯️ Price & SMAs", "📐 MA Comparison", "📉 ADX", "🎯 Bollinger", "💰 Strategies", "⚖️ Strategy Comparison", "🎛️ Custom Strategy"])
 
         # ── Tab 1: Price + SMAs ──
         with tab1:
@@ -452,3 +486,32 @@ for stock_idx, ticker in enumerate(tickers):
                 cmp_df['HH/LL Breakout'] = tbl_hh['Profit'].values[:len(cmp_df)] if len(tbl_hh) >= len(cmp_df) else pd.Series(tbl_hh['Profit'].values)
                 cmp_df['Mean Reversion'] = tbl_mr['Profit'].values[:len(cmp_df)] if len(tbl_mr) >= len(cmp_df) else pd.Series(tbl_mr['Profit'].values)
                 st.dataframe(cmp_df, use_container_width=True, height=400)
+
+        # ── Tab 7: Custom Strategy ──
+        with tab7:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.subheader("🎛️ Interactive SMA Strategy")
+            st.markdown("Adjust the SMA window to see how it affects cumulative profit over the last 1 year.")
+            
+            sma_window = st.slider("Select SMA Window", min_value=20, max_value=50, value=20, step=1, key=f"sma_slider_{ticker}")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            custom_tbl = strategy_custom_sma(df_full, sma_window)
+            
+            fig_custom = go.Figure()
+            fig_custom.add_scatter(
+                x=custom_tbl['Date'], y=custom_tbl['Profit'],
+                mode='lines', name=f'SMA {sma_window} Profit',
+                line=dict(color='#10b981', width=2.5),
+                fill='tozeroy', fillcolor='rgba(16,185,129,0.1)'
+            )
+            fig_custom.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,.2)")
+            
+            final_custom_profit = custom_tbl['Profit'].iloc[-1]
+            fig_custom.update_layout(
+                title=f"{ticker} — Cumulative Profit (1 Year) | Final: ${final_custom_profit:.2f}",
+                xaxis_title="Date",
+                yaxis_title="Cumulative Profit ($)",
+                height=450
+            )
+            st.plotly_chart(styled(fig_custom), use_container_width=True)
