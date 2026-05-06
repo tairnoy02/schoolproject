@@ -402,17 +402,17 @@ with tab6:
     fig_cmp.add_scatter(
         x=tbl_sma.index, y=tbl_sma['Profit'],
         mode='lines', name='SMA Crossover',
-        line=dict(color='#6366f1', width=2.5)
+        line=dict(color='#10b981', width=2.5)
     )
     fig_cmp.add_scatter(
         x=tbl_hh.index, y=tbl_hh['Profit'],
         mode='lines', name='HH/LL Breakout',
-        line=dict(color='#22d3ee', width=2.5)
+        line=dict(color='#f59e0b', width=2.5)
     )
     fig_cmp.add_scatter(
         x=tbl_mr.index, y=tbl_mr['Profit'],
         mode='lines', name='Mean Reversion',
-        line=dict(color='#a855f7', width=2.5)
+        line=dict(color='#22d3ee', width=2.5)
     )
 
     fig_cmp.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,.2)")
