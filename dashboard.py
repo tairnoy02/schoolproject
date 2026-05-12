@@ -320,6 +320,18 @@ def get_usd_ils_rate():
 
 USD_ILS = get_usd_ils_rate()
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_company_name(ticker):
+    """Fetch company name for a ticker."""
+    try:
+        info = yf.Ticker(ticker).info
+        name = info.get('shortName', ticker)
+        # Optional: Clean up common suffixes for a cleaner tab name
+        name = name.replace(', Inc.', '').replace(' Inc.', '').replace(' Corporation', '').replace(' Company', '')
+        return name
+    except Exception:
+        return ticker
+
 
 # ═══════════════════════════ SIDEBAR ═════════════════════════════════
 with st.sidebar:
@@ -407,7 +419,8 @@ else:
         st.warning("Please select at least one stock.")
         st.stop()
 
-    stock_tabs = st.tabs(tickers)
+    tab_names = [f"{t} — {get_company_name(t)}" for t in tickers]
+    stock_tabs = st.tabs(tab_names)
     for stock_idx, ticker in enumerate(tickers):
         with stock_tabs[stock_idx]:
             with st.spinner(f"⏳ Crunching {ticker} data…"):
