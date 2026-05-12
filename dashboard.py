@@ -357,12 +357,14 @@ if view_mode == "⛏️ Metals":
     st.markdown("---")
     st.subheader("🔍 Individual Indicator View")
 
-    ind_col1, ind_col2, ind_col3 = st.columns(3)
+    ind_col1, ind_col2, ind_col3, ind_col4 = st.columns(4)
     with ind_col1:
         ind_metal = st.selectbox("Asset", list(METALS.keys()), format_func=lambda x: f"{METALS[x]} ({x})", key="ind_metal_standalone")
     with ind_col2:
         ind_type = st.selectbox("Indicator", ["SMA", "EMA", "WMA", "HMA"], key="ind_type_standalone")
     with ind_col3:
+        ind_win = st.selectbox("Window", [20, 50, 100], index=1, key="ind_win_standalone")
+    with ind_col4:
         ind_tf = st.selectbox("Timeframe", ["50 days", "100 days", "6 months", "1 year", "2 years", "5 years"], index=3, key="ind_tf_standalone")
 
     tf_map = {"50 days": "3mo", "100 days": "6mo", "6 months": "6mo", "1 year": "1y", "2 years": "2y", "5 years": "5y"}
@@ -374,13 +376,6 @@ if view_mode == "⛏️ Metals":
     slice_n = tf_days[ind_tf]
     if slice_n and len(ind_df) > slice_n:
         ind_df = ind_df.tail(slice_n).reset_index(drop=True)
-
-    if ind_tf in ["50 days", "100 days"]:
-        ind_win = 20
-    elif ind_tf in ["6 months", "1 year"]:
-        ind_win = 50
-    else:
-        ind_win = 100
 
     if ind_type == "EMA":
         ind_col_name = f"EMA_{ind_win}"
