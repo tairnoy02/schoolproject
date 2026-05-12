@@ -365,10 +365,10 @@ if view_mode == "⛏️ Metals":
     with ind_col3:
         ind_win = st.selectbox("Window", [20, 50, 100], index=1, key="ind_win_standalone")
     with ind_col4:
-        ind_tf = st.selectbox("Timeframe", ["50 days", "100 days", "6 months", "1 year", "2 years", "5 years"], index=3, key="ind_tf_standalone")
+        ind_tf = st.selectbox("Timeframe", ["20 days", "50 days", "100 days", "6 months", "1 year", "2 years", "5 years"], index=4, key="ind_tf_standalone")
 
-    tf_map = {"50 days": "3mo", "100 days": "6mo", "6 months": "6mo", "1 year": "1y", "2 years": "2y", "5 years": "5y"}
-    tf_days = {"50 days": 50, "100 days": 100, "6 months": 126, "1 year": 252, "2 years": 504, "5 years": None}
+    tf_map = {"20 days": "1mo", "50 days": "3mo", "100 days": "6mo", "6 months": "6mo", "1 year": "1y", "2 years": "2y", "5 years": "5y"}
+    tf_days = {"20 days": 20, "50 days": 50, "100 days": 100, "6 months": 126, "1 year": 252, "2 years": 504, "5 years": None}
 
     with st.spinner(f"Fetching {METALS[ind_metal]} data…"):
         ind_df = metals_analysis(ind_metal, tf_map[ind_tf])
