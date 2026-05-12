@@ -307,6 +307,20 @@ def styled(fig):
     fig.update_layout(**DARK)
     return fig
 
+# ─────────────────── USD/ILS Exchange Rate ───────────────────────────
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_usd_ils_rate():
+    """Fetch current USD/ILS exchange rate."""
+    try:
+        fx = yf.Ticker("USDILS=X")
+        rate = fx.history(period="1d")['Close'].iloc[-1]
+        return round(rate, 2)
+    except Exception:
+        return 3.63  # fallback
+
+USD_ILS = get_usd_ils_rate()
+
+
 # ═══════════════════════════ SIDEBAR ═════════════════════════════════
 with st.sidebar:
     st.markdown("# 👁️ Trading Eye")
@@ -331,11 +345,11 @@ if view_mode == "⛏️ Metals":
     fig_m = make_subplots(rows=1, cols=2, subplot_titles=("Window 20", "Window 50"), horizontal_spacing=0.06)
     ma_colors = {"SMA":"#10b981","WMA":"#6366f1","EMA_":"#ef4444","HMA":"#22d3ee"}
     for col_idx, win in enumerate([20, 50], 1):
-        fig_m.add_scatter(x=mdf['Date'], y=mdf['High'], mode='lines', name='Price', line=dict(color='rgba(148,163,184,0.35)', width=1), row=1, col=col_idx, showlegend=(col_idx==1))
+        fig_m.add_scatter(x=mdf['Date'], y=mdf['High'], mode='lines', name='Price', line=dict(color='rgba(148,163,184,0.35)', width=1), row=1, col=col_idx, showlegend=(col_idx==1), customdata=(mdf['High'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
         for prefix, clr in ma_colors.items():
             c = f"{prefix}{win}" if prefix != "EMA_" else f"EMA_{win}"
             if c in mdf.columns:
-                fig_m.add_scatter(x=mdf['Date'], y=mdf[c], mode='lines', name=f'{prefix.rstrip("_")}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
+                fig_m.add_scatter(x=mdf['Date'], y=mdf[c], mode='lines', name=f'{prefix.rstrip("_")}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1), customdata=(mdf[c] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
     fig_m.update_layout(title=f"{METALS[metal_select]} ({metal_select}) — Moving Average Comparison", height=450)
     st.plotly_chart(styled(fig_m), use_container_width=True)
 
@@ -374,9 +388,9 @@ if view_mode == "⛏️ Metals":
         ind_col_name = f"{ind_type}{ind_win}"
 
     fig_ind = go.Figure()
-    fig_ind.add_scatter(x=ind_df['Date'], y=ind_df['High'], mode='lines', name='Price', line=dict(color='rgba(148,163,184,0.5)', width=1.5))
+    fig_ind.add_scatter(x=ind_df['Date'], y=ind_df['High'], mode='lines', name='Price', line=dict(color='rgba(148,163,184,0.5)', width=1.5), customdata=(ind_df['High'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
     if ind_col_name in ind_df.columns:
-        fig_ind.add_scatter(x=ind_df['Date'], y=ind_df[ind_col_name], mode='lines', name=f'{ind_type} {ind_win}', line=dict(color='#a855f7', width=2.5))
+        fig_ind.add_scatter(x=ind_df['Date'], y=ind_df[ind_col_name], mode='lines', name=f'{ind_type} {ind_win}', line=dict(color='#a855f7', width=2.5), customdata=(ind_df[ind_col_name] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
     fig_ind.update_layout(title=f"{METALS[ind_metal]} ({ind_metal}) — {ind_type} {ind_win} | {ind_tf}", height=400)
     st.plotly_chart(styled(fig_ind), use_container_width=True)
 
@@ -419,13 +433,13 @@ else:
         # ── Tab 1: Price + SMAs ──
         with tab1:
             fig = go.Figure()
-            fig.add_candlestick(x=df['Date'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name="OHLC")
+            fig.add_candlestick(x=df['Date'], open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name="OHLC", customdata=(df['Close'] * USD_ILS), hovertemplate="Open: %{open:$.2f}<br>High: %{high:$.2f}<br>Low: %{low:$.2f}<br>Close: %{close:$.2f} (₪%{customdata:.2f})<extra></extra>")
             for s, c in [(20,"#6366f1"),(50,"#22d3ee"),(100,"#f59e0b")]:
                 col = f'SMA{s}'
                 if col in df.columns:
-                    fig.add_scatter(x=df['Date'], y=df[col], mode='lines', name=f'SMA {s}', line=dict(color=c, width=2))
+                    fig.add_scatter(x=df['Date'], y=df[col], mode='lines', name=f'SMA {s}', line=dict(color=c, width=2), customdata=(df[col] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
             above = df['High'].where(df.get('above_avg', pd.Series(False, index=df.index)), np.nan)
-            fig.add_scatter(x=df['Date'], y=above, mode='lines', line=dict(color='#10b981', width=3, dash='dot'), name='Above all SMAs')
+            fig.add_scatter(x=df['Date'], y=above, mode='lines', line=dict(color='#10b981', width=3, dash='dot'), name='Above all SMAs', customdata=(above * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
             fig.update_layout(title=f"{ticker} — Price & Simple Moving Averages", xaxis_rangeslider_visible=False)
             st.plotly_chart(styled(fig), use_container_width=True)
 
@@ -434,11 +448,11 @@ else:
             fig = make_subplots(rows=1, cols=2, subplot_titles=("Window 20", "Window 50"), horizontal_spacing=0.06)
             colors = {"SMA":"#10b981","WMA":"#6366f1","EMA_":"#ef4444","HMA":"#22d3ee"}
             for col_idx, win in enumerate([20, 50], 1):
-                fig.add_scatter(x=df['Date'], y=df['High'], mode='lines', name='Price', line=dict(color='rgba(148,163,184,0.35)', width=1), row=1, col=col_idx, showlegend=(col_idx==1))
+                fig.add_scatter(x=df['Date'], y=df['High'], mode='lines', name='Price', line=dict(color='rgba(148,163,184,0.35)', width=1), row=1, col=col_idx, showlegend=(col_idx==1), customdata=(df['High'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
                 for prefix, clr in colors.items():
                     c = f"{prefix}{win}" if prefix != "EMA_" else f"EMA_{win}"
                     if c in df.columns:
-                        fig.add_scatter(x=df['Date'], y=df[c], mode='lines', name=f'{prefix.rstrip("_")}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
+                        fig.add_scatter(x=df['Date'], y=df[c], mode='lines', name=f'{prefix.rstrip("_")}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1), customdata=(df[c] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
             fig.update_layout(title=f"{ticker} — Moving Average Comparison", height=450)
             st.plotly_chart(styled(fig), use_container_width=True)
 
@@ -455,10 +469,10 @@ else:
         # ── Tab 4: Bollinger ──
         with tab4:
             fig = go.Figure()
-            fig.add_scatter(x=df['Date'], y=df['Upper_Band'], mode='lines', name='Upper Band', line=dict(color='#6366f1', width=1))
-            fig.add_scatter(x=df['Date'], y=df['Lower_Band'], mode='lines', name='Lower Band', line=dict(color='#6366f1', width=1), fill='tonexty', fillcolor='rgba(99,102,241,.08)')
-            fig.add_scatter(x=df['Date'], y=df['SMA20'], mode='lines', name='SMA 20', line=dict(color='#f59e0b', width=1.5, dash='dot'))
-            fig.add_scatter(x=df['Date'], y=df['High'], mode='lines', name='Price', line=dict(color='#22d3ee', width=2))
+            fig.add_scatter(x=df['Date'], y=df['Upper_Band'], mode='lines', name='Upper Band', line=dict(color='#6366f1', width=1), customdata=(df['Upper_Band'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
+            fig.add_scatter(x=df['Date'], y=df['Lower_Band'], mode='lines', name='Lower Band', line=dict(color='#6366f1', width=1), fill='tonexty', fillcolor='rgba(99,102,241,.08)', customdata=(df['Lower_Band'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
+            fig.add_scatter(x=df['Date'], y=df['SMA20'], mode='lines', name='SMA 20', line=dict(color='#f59e0b', width=1.5, dash='dot'), customdata=(df['SMA20'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
+            fig.add_scatter(x=df['Date'], y=df['High'], mode='lines', name='Price', line=dict(color='#22d3ee', width=2), customdata=(df['High'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
             fig.update_layout(title=f"{ticker} — Bollinger Bands (20, 2σ)")
             st.plotly_chart(styled(fig), use_container_width=True)
 
@@ -492,13 +506,13 @@ else:
 
             # Profit chart
             fig = go.Figure()
-            fig.add_scatter(x=tbl.index, y=tbl['Profit'], mode='lines+markers', name='Profit', line=dict(color='#10b981' if final_profit >= 0 else '#ef4444', width=2), marker=dict(size=3))
-            fig.add_scatter(x=tbl.index, y=tbl['Price'], mode='lines', name='Price', line=dict(color='#6366f1', width=1.5), yaxis='y2')
+            fig.add_scatter(x=tbl.index, y=tbl['Profit'], mode='lines+markers', name='Profit', line=dict(color='#10b981' if final_profit >= 0 else '#ef4444', width=2), marker=dict(size=3), customdata=(tbl['Profit'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
+            fig.add_scatter(x=tbl.index, y=tbl['Price'], mode='lines', name='Price', line=dict(color='#6366f1', width=1.5), yaxis='y2', customdata=(tbl['Price'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
 
             buys = tbl[tbl['Signal'].diff() == 1]
             sells = tbl[tbl['Signal'].diff() == -1]
-            fig.add_scatter(x=buys.index, y=buys['Price'], mode='markers', name='Buy', marker=dict(color='#10b981', size=10, symbol='triangle-up'), yaxis='y2')
-            fig.add_scatter(x=sells.index, y=sells['Price'], mode='markers', name='Sell', marker=dict(color='#ef4444', size=10, symbol='triangle-down'), yaxis='y2')
+            fig.add_scatter(x=buys.index, y=buys['Price'], mode='markers', name='Buy', marker=dict(color='#10b981', size=10, symbol='triangle-up'), yaxis='y2', customdata=(buys['Price'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
+            fig.add_scatter(x=sells.index, y=sells['Price'], mode='markers', name='Sell', marker=dict(color='#ef4444', size=10, symbol='triangle-down'), yaxis='y2', customdata=(sells['Price'] * USD_ILS), hovertemplate="%{y:$.2f} (₪%{customdata:.2f})<extra>%{name}</extra>")
 
             fig.update_layout(
                 title=f"{ticker} — {strat}",
