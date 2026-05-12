@@ -199,16 +199,16 @@ def metals_analysis(metal_ticker, period="1y"):
     """Run MA analysis (SMA, WMA, EMA, HMA) for a metal ETF."""
     df = fetch_stock(metal_ticker, period)
     n_rows = len(df)
-    for s in [20, 50]:
+    for s in [20, 50, 100]:
         if n_rows >= s:
             df = iter_fn(df, s, bunch_mean)
-    for s in [20, 50]:
+    for s in [20, 50, 100]:
         if n_rows >= s:
             df = iter_fn(df, s, weighted_bunch_mean)
-    for s in [20, 50]:
+    for s in [20, 50, 100]:
         if n_rows >= s:
             df = exponential_moving_average(df, s)
-    for s in [20, 50]:
+    for s in [20, 50, 100]:
         if n_rows >= s:
             df = hull_moving_average(df, s)
     return df
@@ -395,6 +395,51 @@ for stock_idx, ticker in enumerate(tickers):
                         fig_m.add_scatter(x=mdf['Date'], y=mdf[c], mode='lines', name=f'{prefix.rstrip("_")}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
             fig_m.update_layout(title=f"{METALS[metal_select]} ({metal_select}) — Moving Average Comparison", height=450)
             st.plotly_chart(styled(fig_m), use_container_width=True)
+
+            # ── Individual Indicator Display ──
+            st.markdown("---")
+            st.subheader("🔍 Individual Indicator View")
+
+            ind_col1, ind_col2, ind_col3 = st.columns(3)
+            with ind_col1:
+                ind_metal = st.selectbox("Asset", list(METALS.keys()), format_func=lambda x: f"{METALS[x]} ({x})", key=f"ind_metal_{ticker}")
+            with ind_col2:
+                ind_type = st.selectbox("Indicator", ["SMA", "EMA", "WMA", "HMA"], key=f"ind_type_{ticker}")
+            with ind_col3:
+                ind_tf = st.selectbox("Timeframe", ["50 days", "100 days", "6 months", "1 year", "2 years", "5 years"], index=3, key=f"ind_tf_{ticker}")
+
+            # Map timeframe to yfinance period
+            tf_map = {"50 days": "3mo", "100 days": "6mo", "6 months": "6mo", "1 year": "1y", "2 years": "2y", "5 years": "5y"}
+            tf_days = {"50 days": 50, "100 days": 100, "6 months": 126, "1 year": 252, "2 years": 504, "5 years": None}
+
+            with st.spinner(f"Fetching {METALS[ind_metal]} data…"):
+                ind_df = metals_analysis(ind_metal, tf_map[ind_tf])
+
+            # Slice to exact day count if needed
+            slice_n = tf_days[ind_tf]
+            if slice_n and len(ind_df) > slice_n:
+                ind_df = ind_df.tail(slice_n).reset_index(drop=True)
+
+            # Find the matching column for the selected indicator and a reasonable window
+            # Pick window 20 for short timeframes, 50 for medium, 100 for long
+            if ind_tf in ["50 days", "100 days"]:
+                ind_win = 20
+            elif ind_tf in ["6 months", "1 year"]:
+                ind_win = 50
+            else:
+                ind_win = 100
+
+            if ind_type == "EMA":
+                ind_col_name = f"EMA_{ind_win}"
+            else:
+                ind_col_name = f"{ind_type}{ind_win}"
+
+            fig_ind = go.Figure()
+            fig_ind.add_scatter(x=ind_df['Date'], y=ind_df['High'], mode='lines', name='Price', line=dict(color='rgba(148,163,184,0.5)', width=1.5))
+            if ind_col_name in ind_df.columns:
+                fig_ind.add_scatter(x=ind_df['Date'], y=ind_df[ind_col_name], mode='lines', name=f'{ind_type} {ind_win}', line=dict(color='#a855f7', width=2.5))
+            fig_ind.update_layout(title=f"{METALS[ind_metal]} ({ind_metal}) — {ind_type} {ind_win} | {ind_tf}", height=400)
+            st.plotly_chart(styled(fig_ind), use_container_width=True)
 
         # ── Tab 3: ADX ──
         with tab3:
