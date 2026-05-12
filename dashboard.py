@@ -51,6 +51,9 @@ SP100 = [
     "WFC","WMT","XOM"
 ]
 
+# ──────────────────────── Metal ETFs ─────────────────────────────────
+METALS = {"GLD": "Gold", "SLV": "Silver", "CPER": "Copper", "LIT": "Lithium", "URA": "Uranium"}
+
 # ──────────────────── Core analysis functions ────────────────────────
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -191,6 +194,25 @@ def full_analysis(ticker, period="1y"):
     df = add_bollinger(df)
     return df
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def metals_analysis(metal_ticker, period="1y"):
+    """Run MA analysis (SMA, WMA, EMA, HMA) for a metal ETF."""
+    df = fetch_stock(metal_ticker, period)
+    n_rows = len(df)
+    for s in [20, 50]:
+        if n_rows >= s:
+            df = iter_fn(df, s, bunch_mean)
+    for s in [20, 50]:
+        if n_rows >= s:
+            df = iter_fn(df, s, weighted_bunch_mean)
+    for s in [20, 50]:
+        if n_rows >= s:
+            df = exponential_moving_average(df, s)
+    for s in [20, 50]:
+        if n_rows >= s:
+            df = hull_moving_average(df, s)
+    return df
+
 # ─────────────────── Strategy functions ──────────────────────────────
 
 def strategy_sma(df):
@@ -329,7 +351,7 @@ for stock_idx, ticker in enumerate(tickers):
         st.markdown("")
 
         # ───────────── Tabs ──────────────
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["🕯️ Price & SMAs", "📐 MA Comparison", "📉 ADX", "🎯 Bollinger", "💰 Strategies", "⚖️ Strategy Comparison", "🎛️ Custom Strategy"])
+        tab1, tab2, tab_metals, tab3, tab4, tab5, tab6, tab7 = st.tabs(["🕯️ Price & SMAs", "📐 MA Comparison", "⛏️ Metals Comparison", "📉 ADX", "🎯 Bollinger", "💰 Strategies", "⚖️ Strategy Comparison", "🎛️ Custom Strategy"])
 
         # ── Tab 1: Price + SMAs ──
         with tab1:
@@ -356,6 +378,23 @@ for stock_idx, ticker in enumerate(tickers):
                         fig.add_scatter(x=df['Date'], y=df[c], mode='lines', name=f'{prefix.rstrip("_")} {win}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
             fig.update_layout(title=f"{ticker} — Moving Average Comparison", height=450)
             st.plotly_chart(styled(fig), use_container_width=True)
+
+        # ── Metals Comparison ──
+        with tab_metals:
+            st.subheader("⛏️ Metals & Minerals — MA Comparison")
+            metal_select = st.selectbox("Select Metal / Mineral", list(METALS.keys()), format_func=lambda x: f"{METALS[x]} ({x})", key=f"metal_{ticker}")
+            with st.spinner(f"Fetching {METALS[metal_select]} data…"):
+                mdf = metals_analysis(metal_select, period)
+            fig_m = make_subplots(rows=1, cols=2, subplot_titles=("Window 20", "Window 50"), horizontal_spacing=0.06)
+            ma_colors = {"SMA":"#10b981","WMA":"#6366f1","EMA_":"#ef4444","HMA":"#22d3ee"}
+            for col_idx, win in enumerate([20, 50], 1):
+                fig_m.add_scatter(x=mdf['Date'], y=mdf['High'], mode='lines', name='Price', line=dict(color='rgba(148,163,184,0.35)', width=1), row=1, col=col_idx, showlegend=(col_idx==1))
+                for prefix, clr in ma_colors.items():
+                    c = f"{prefix}{win}" if prefix != "EMA_" else f"EMA_{win}"
+                    if c in mdf.columns:
+                        fig_m.add_scatter(x=mdf['Date'], y=mdf[c], mode='lines', name=f'{prefix.rstrip("_")} {win}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
+            fig_m.update_layout(title=f"{METALS[metal_select]} ({metal_select}) — Moving Average Comparison", height=450)
+            st.plotly_chart(styled(fig_m), use_container_width=True)
 
         # ── Tab 3: ADX ──
         with tab3:
