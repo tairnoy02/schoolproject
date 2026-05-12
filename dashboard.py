@@ -375,7 +375,7 @@ for stock_idx, ticker in enumerate(tickers):
                 for prefix, clr in colors.items():
                     c = f"{prefix}{win}" if prefix != "EMA_" else f"EMA_{win}"
                     if c in df.columns:
-                        fig.add_scatter(x=df['Date'], y=df[c], mode='lines', name=f'{prefix.rstrip("_")} {win}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
+                        fig.add_scatter(x=df['Date'], y=df[c], mode='lines', name=f'{prefix.rstrip("_")}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
             fig.update_layout(title=f"{ticker} — Moving Average Comparison", height=450)
             st.plotly_chart(styled(fig), use_container_width=True)
 
@@ -392,7 +392,7 @@ for stock_idx, ticker in enumerate(tickers):
                 for prefix, clr in ma_colors.items():
                     c = f"{prefix}{win}" if prefix != "EMA_" else f"EMA_{win}"
                     if c in mdf.columns:
-                        fig_m.add_scatter(x=mdf['Date'], y=mdf[c], mode='lines', name=f'{prefix.rstrip("_")} {win}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
+                        fig_m.add_scatter(x=mdf['Date'], y=mdf[c], mode='lines', name=f'{prefix.rstrip("_")}', line=dict(color=clr, width=1.5), row=1, col=col_idx, showlegend=(col_idx==1))
             fig_m.update_layout(title=f"{METALS[metal_select]} ({metal_select}) — Moving Average Comparison", height=450)
             st.plotly_chart(styled(fig_m), use_container_width=True)
 
