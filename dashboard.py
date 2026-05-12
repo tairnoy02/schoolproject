@@ -394,6 +394,18 @@ if view_mode == "⛏️ Metals":
     fig_ind.update_layout(title=f"{METALS[ind_metal]} ({ind_metal}) — {ind_type} {ind_win} | {ind_tf}", height=400)
     st.plotly_chart(styled(fig_ind), use_container_width=True)
 
+    with st.expander("📋 View Calculation Data"):
+        cols_to_show = ['Date', 'High']
+        if ind_col_name in ind_df.columns:
+            cols_to_show.append(ind_col_name)
+        
+        display_df = ind_df[cols_to_show].copy()
+        display_df['Date'] = display_df['Date'].dt.strftime('%Y-%m-%d')
+        display_df = display_df.rename(columns={'High': 'Price'})
+        
+        # Reverse to show most recent dates at the top
+        st.dataframe(display_df.iloc[::-1].set_index('Date'), use_container_width=True)
+
 else:
     # ═══════════════════ STOCKS VIEW ═════════════════════════════════
     if not tickers:
