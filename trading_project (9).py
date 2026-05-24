@@ -729,6 +729,7 @@ strategy_table = generate_mean_reversion_strategy(aapl_df)
 print(strategy_table)
 
 try:
+    from google.colab import data_table
     data_table.enable_dataframe_formatter()
-except NameError:
+except ImportError:
     pass
