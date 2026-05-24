@@ -488,8 +488,8 @@ strategy_table = generate_strategy_table(aapl_df)
 print(strategy_table)
 
 try:
-    from google.colab import data_table
-    data_table.enable_dataframe_formatter()
+    colab = __import__('google.colab', fromlist=['data_table'])
+    colab.data_table.enable_dataframe_formatter()
 except ImportError:
     pass
 
@@ -559,8 +559,8 @@ strategy_table = generate_strategy_table(aapl_df)
 print(strategy_table)
 
 try:
-    from google.colab import data_table
-    data_table.enable_dataframe_formatter()
+    colab = __import__('google.colab', fromlist=['data_table'])
+    colab.data_table.enable_dataframe_formatter()
 except ImportError:
     pass
 
@@ -639,8 +639,8 @@ strategy_table = generate_hh_ll_strategy(aapl_df)
 print(strategy_table)
 
 try:
-    from google.colab import data_table
-    data_table.enable_dataframe_formatter()
+    colab = __import__('google.colab', fromlist=['data_table'])
+    colab.data_table.enable_dataframe_formatter()
 except ImportError:
     pass
 
@@ -729,7 +729,7 @@ strategy_table = generate_mean_reversion_strategy(aapl_df)
 print(strategy_table)
 
 try:
-    from google.colab import data_table
-    data_table.enable_dataframe_formatter()
+    colab = __import__('google.colab', fromlist=['data_table'])
+    colab.data_table.enable_dataframe_formatter()
 except ImportError:
     pass
