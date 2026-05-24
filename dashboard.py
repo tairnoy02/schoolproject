@@ -225,9 +225,9 @@ def strategy_sma(df):
             f = 1 if p > s + eps else 0
         else:
             f = 0 if p < s + eps else 1
-        if hold == 0 and f == 1: bp = p; profit = 0.0
-        elif f == 1: profit = p - bp
-        elif hold == 1 and f == 0: profit = p - bp; cp = profit
+        if hold == 0 and f == 1: bp = p; profit = cp
+        elif f == 1: profit = cp + (p - bp)
+        elif hold == 1 and f == 0: profit = cp + (p - bp); cp = profit
         else: profit = cp
         rows.append({'Day':i+1,'Price':round(p,3),'SMA20':round(s,3),'Hold':hold,'Signal':f,'Profit':round(profit,3)})
         hold = f
@@ -243,9 +243,9 @@ def strategy_hh_ll(df):
         p = sub.loc[i,'High']; hh = sub.loc[i,'HH_prev']; ll = sub.loc[i,'LL_prev']
         if hold == 0: f = 1 if p < ll else 0
         else: f = 0 if p > hh else 1
-        if hold == 0 and f == 1: bp = p; profit = 0.0
-        elif f == 1: profit = p - bp
-        elif hold == 1 and f == 0: profit = p - bp; cp = profit
+        if hold == 0 and f == 1: bp = p; profit = cp
+        elif f == 1: profit = cp + (p - bp)
+        elif hold == 1 and f == 0: profit = cp + (p - bp); cp = profit
         else: profit = cp
         rows.append({'Day':i+1,'Price':round(p,3),'LL':round(ll,3),'HH':round(hh,3),'Hold':hold,'Signal':f,'Profit':round(profit,3)})
         hold = f
@@ -258,9 +258,9 @@ def strategy_mean_rev(df):
         p = sub.loc[i,'High']; sma = float(sub.loc[i,'SMA20']); z = float(sub.loc[i,'Z_Score']) if not pd.isna(sub.loc[i,'Z_Score']) else 0
         if hold == 0: f = 1 if z < -2 else 0
         else: f = 0 if p >= sma else 1
-        if hold == 0 and f == 1: bp = p; profit = 0.0
-        elif f == 1: profit = p - bp
-        elif hold == 1 and f == 0: profit = p - bp; cp = profit
+        if hold == 0 and f == 1: bp = p; profit = cp
+        elif f == 1: profit = cp + (p - bp)
+        elif hold == 1 and f == 0: profit = cp + (p - bp); cp = profit
         else: profit = cp
         rows.append({'Day':i+1,'Price':round(p,3),'SMA20':round(sma,3),'Z':round(z,3),'Hold':hold,'Signal':f,'Profit':round(profit,3)})
         hold = f
@@ -284,9 +284,9 @@ def strategy_custom_sma(df_full, window):
         else:
             f = 0 if p < s + eps else 1
             
-        if hold == 0 and f == 1: bp = p; profit = 0.0
-        elif f == 1: profit = p - bp
-        elif hold == 1 and f == 0: profit = p - bp; cp = profit
+        if hold == 0 and f == 1: bp = p; profit = cp
+        elif f == 1: profit = cp + (p - bp)
+        elif hold == 1 and f == 0: profit = cp + (p - bp); cp = profit
         else: profit = cp
         rows.append({'Date': sub.loc[i,'Date'], 'Profit':round(profit,3)})
         hold = f

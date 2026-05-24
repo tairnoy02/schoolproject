@@ -13,8 +13,13 @@ import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-
 import plotly.graph_objects as go
+import sys
+
+def show_fig(fig):
+    is_jupyter = 'ipykernel' in sys.modules or 'google.colab' in sys.modules or hasattr(sys, 'ps1')
+    if is_jupyter:
+        fig.show()
 
 sp100 = [
     "AAPL", "ABBV", "ABT", "ACN", "ADBE", "AIG", "AMD", "AMGN", "AMT", "AMZN",
@@ -81,7 +86,7 @@ def bunch_mean(df, bunch, bunch_size, new_col_index):
   #creates a new column if not already exists.
   new_col = f"SMA{bunch_size}"
   if new_col not in df.columns:
-        df[new_col] = None
+        df[new_col] = np.nan
 
   #calculates the mean of the current bunch.
   mean = bunch['High'].mean()
@@ -94,7 +99,7 @@ def weighted_bunch_mean(df, bunch, bunch_size, new_col_index):
   index_sum=0
   new_col = f"WMA{bunch_size}"
   if new_col not in df.columns:
-        df[new_col] = None
+        df[new_col] = np.nan
 
   #calculates the mean of the current bunch.
   for index, row in bunch.iterrows():
@@ -123,7 +128,7 @@ def exponential_moving_average(df, n):
 # calculates WMA for a given window size using your weighted_bunch_mean function
 def calc_wma_column(df, size):
     col = f"WMA{size}"
-    df[col] = None
+    df[col] = np.nan
 
     for i in range(len(df)):
         # not enough rows to calculate WMA
@@ -154,7 +159,7 @@ def hull_moving_average(df, n):
 
     # calculate WMA on the temporary values using sqrt(n)
     out_col = f"HMA{n}"
-    df[out_col] = None
+    df[out_col] = np.nan
 
     for i in range(len(df)):
         # not enough rows for sqrt(n)
@@ -300,7 +305,7 @@ for df in top10_dfs:
         template="plotly_dark"
     )
     fig.update_xaxes(tickformat="%m-%Y")
-    fig.show()
+    show_fig(fig)
     i += 1
 
 i = 0
@@ -323,7 +328,7 @@ for df in top10_dfs:
     )
 
     fig.update_xaxes(tickformat="%m-%Y")
-    fig.show()
+    show_fig(fig)
 
     i += 1
 
@@ -347,7 +352,7 @@ for df in top10_dfs:
     )
 
     fig.update_xaxes(tickformat="%m-%Y")
-    fig.show()
+    show_fig(fig)
 
     i += 1
 
@@ -397,7 +402,7 @@ for df in top10_dfs:
     fig.update_layout(title=f"{top10[i]} — Comparison: Window 20 vs Window 50", template="plotly_dark")
     fig.update_xaxes(tickformat="%m-%Y")
 
-    fig.show()
+    show_fig(fig)
     i += 1
 
 i = 0
@@ -423,7 +428,7 @@ for df in top10_dfs:
     )
 
     fig.update_xaxes(tickformat="%m-%Y")
-    fig.show()
+    show_fig(fig)
 
     i += 1
 
@@ -482,10 +487,11 @@ strategy_table = generate_strategy_table(aapl_df)
 # 3. Display
 print(strategy_table)
 
-from google.colab import data_table
-data_table.enable_dataframe_formatter()
-
-strategy_table
+try:
+    from google.colab import data_table
+    data_table.enable_dataframe_formatter()
+except ImportError:
+    pass
 
 import pandas as pd
 import numpy as np
@@ -519,11 +525,11 @@ def generate_strategy_table(df):
         # Profit Logic
         if current_hold == 0 and f == 1:
             buy_price = p
-            profit = 0.0
+            profit = a
         elif f == 1:
-            profit = p - buy_price
+            profit = a + (p - buy_price)
         elif current_hold == 1 and f == 0:
-            profit = p - buy_price
+            profit = a + (p - buy_price)
             a = profit
         else:
             profit = a
@@ -552,10 +558,11 @@ aapl_df = iter(aapl_df, 20, bunch_mean)
 strategy_table = generate_strategy_table(aapl_df)
 print(strategy_table)
 
-from google.colab import data_table
-data_table.enable_dataframe_formatter()
-
-strategy_table
+try:
+    from google.colab import data_table
+    data_table.enable_dataframe_formatter()
+except ImportError:
+    pass
 
 import pandas as pd
 import numpy as np
@@ -598,11 +605,11 @@ def generate_hh_ll_strategy(df):
         # Profit logic[cite: 1]
         if current_hold == 0 and f == 1:
             buy_price = p
-            profit = 0.0
+            profit = closed_profit
         elif f == 1:
-            profit = p - buy_price
+            profit = closed_profit + (p - buy_price)
         elif current_hold == 1 and f == 0:
-            profit = p - buy_price
+            profit = closed_profit + (p - buy_price)
             closed_profit = profit
         else:
             profit = closed_profit
@@ -631,10 +638,11 @@ aapl_df = lowest_low(aapl_df, 20)
 strategy_table = generate_hh_ll_strategy(aapl_df)
 print(strategy_table)
 
-from google.colab import data_table
-data_table.enable_dataframe_formatter()
-
-strategy_table
+try:
+    from google.colab import data_table
+    data_table.enable_dataframe_formatter()
+except ImportError:
+    pass
 
 # Check unique values in the Strategy_Output column
 print(strategy_table['Strategy_Output'].unique())
@@ -692,11 +700,11 @@ def generate_mean_reversion_strategy(df):
         # Profit Logic
         if current_hold == 0 and f == 1:
             buy_price = p
-            profit = 0.0
+            profit = closed_profit
         elif f == 1:
-            profit = p - buy_price
+            profit = closed_profit + (p - buy_price)
         elif current_hold == 1 and f == 0:
-            profit = p - buy_price
+            profit = closed_profit + (p - buy_price)
             closed_profit = profit
         else:
             profit = closed_profit
@@ -720,6 +728,7 @@ aapl_df = add_bollinger_and_zscore(aapl_df)
 strategy_table = generate_mean_reversion_strategy(aapl_df)
 print(strategy_table)
 
-data_table.enable_dataframe_formatter()
-
-strategy_table
+try:
+    data_table.enable_dataframe_formatter()
+except NameError:
+    pass
